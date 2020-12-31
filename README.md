@@ -10,7 +10,7 @@ This software was developed by Idaho National Laboratory (INL) to produce genera
 
 Location Generalizer, hereafter referred to as "the software," consist of Python scripts, a library of look-up tables containing open-source information, and a configuration file. Figure 1 depicts the basic software architecture, including inputs and outputs. The software will require connection to the user's database, from which it will query data from a table that meets specific requirements. This table is referred to in this document as the "input table," because it is the source of input data for the software. The software will output three files. The input table and output files are explained in detail in the next section of this document.
 
-<img src="./Figure1.png" width="612" height="323">
+<img src="./Figure1.png" width="490" height="258">
 
 ### **Installation**
 
