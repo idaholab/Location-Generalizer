@@ -1,0 +1,287 @@
+########################################################################
+#  Copyright 2020 Battelle Energy Alliance, LLC   ALL RIGHTS RESERVED  #
+#  Mobility Systems & Analytics Group, Idaho National Laboratory       #
+########################################################################
+
+# Database connection string (SQL Server in this case)
+odbcConnectionString: Driver={SQL Server};Server=AVTPRD.inl.gov,1433;Database=EVProjVehicles;Trusted_Connection=Yes;
+inputTableOrCSV: EVPInput
+
+# CSV file connection string
+#odbcConnectionString: DSN=EVPInput
+#inputTableOrCSV: EVPInput.csv
+
+vehiclesInChunk: 200
+qryVehicleIDList: SELECT distinct VehicleID FROM {inputsrc} where VehicleID > {startVehicle} order by VehicleID
+qryVehicleInfo: >
+    SELECT VehicleID, TripStartLocalTime, TripEndLocalTime, 
+           TripStartLatitude, TripStartLongitude, 
+           TripEndLatitude, TripEndLongitude, 
+           TripStartOdometer_Miles, TripEndOdometer_Miles
+      FROM {inputsrc}
+     where VehicleID in ({})
+       and TripStartLocalTime is not null 
+       and TripEndLocalTime is not null 
+       and TripStartLatitude is not null 
+       and TripStartLongitude is not null 
+       and TripEndLatitude is not null 
+       and TripEndLongitude is not null 
+       and TripStartOdometer_Miles is not null 
+       and TripEndOdometer_Miles is not null 
+     order by VehicleID, TripStartLocalTime
+
+errorLogFileName: './data/errorLog.csv'
+heartbeatFileName: './data/heartbeat.txt'
+locationInfoFileName: './data/LocationInfo.csv'
+homeInfoFileName: './data/HomeInfo.csv'
+evseLookupFileName: './data/AFDC_Stations.csv'
+pklCensusDivisionsFileName: './data/divisions.pkl'
+
+dayEndHours: 3
+dayEndMinutes: 30
+
+evseDistRange_Miles: 25.0
+evseLatRange: 0.4
+evseLonRange: 0.5
+
+hdrErrorLogCSV:
+  - ['Timestamp', 'VehicleID', 'ErrorCode', 'Description']
+hdrLocationInfoCSV:
+  - ['VehicleID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLocationCategory', 'TripEndLocationCategory']
+hdrHomeInfoCSV: 
+  - ['VehicleID', 'HomeStartLocalTime', 'HomeEndLocalTime', 'HomeRegion', 'PublicChargingDensityL2', 'PublicChargingDensityDCFC']
+colLocationInfo:
+  - VehicleID
+  - TripStartLocalTime
+  - TripEndLocalTime
+  - TripStartDistanceFromHome_Miles
+  - TripEndDistanceFromHome_Miles
+  - TripStartLatitude
+  - TripStartLongitude
+  - TripEndLatitude
+  - TripEndLongitude
+  - TripStartLocationCategory
+  - TripEndLocationCategory
+  - TripStartClusterID
+  - TripEndClusterID
+colHomeInfo:
+  - VehicleID
+  - HomeStartLocalTime
+  - HomeEndLocalTime
+  - HomeRegion
+  - PublicChargingDensityL2
+  - PublicChargingDensityDCFC
+
+boundingBoxes:
+  USA_Main:
+    - [49.038,-125.024]
+    - [31.354,-66.182]
+  USA_SE:
+    - [31.466,-106.699]
+    - [24.167,-79.805]
+  AK_Main:
+    - [71.385,-168.926]
+    - [56.801,-140.977]
+  AK_Peninsula:
+    - [56.921,-171.694]
+    - [51.917,-152.227]
+  AK_Arm:
+    - [60.392,-141.108]
+    - [54.598,-129.946]
+  HI:
+    - [22.472,-160.796]
+    - [18.646,-154.556]
+
+gpsOdoThreshold_mi: -0.5
+minTrips: 30
+minLastTrips: 30
+minPctParks: 0.94
+
+distancePlaces: 0
+
+dbscan_eps_ft: 100
+dbscan_min_spls: 1
+
+documentation: 
+  odbcConnectionString: >
+    This value must be tailored to the user's database environment. 
+    https://www.connectionstrings.com/ is a useful site for finding a valid connection string.
+    The example shows a typical SQL Server, DSN-less connections style, as well as an ODBC
+    connection when using a CSV file as input. The CSV file example depends on the creation of
+    a DSN. Performance will probably suffer if a CSV file is used.
+
+  inputTableOrCSV: The name of the database table or CSV file to use for input
+
+  vehiclesInChunk: >
+    This is the number of vehicles to process per pass. Memory is spared by not processing all 
+    vehicles at once. Testing has shown that 100 or 200 provides efficient perfomrmance, but
+    this can be changed to suit the system
+
+  qryVehicleIDList: >
+    This query finds all the vehicle IDs that will be processed
+
+  qryVehicleInfo: >
+    This is the main vehicle data query and will read in a "chunk" of vehicles to process.
+    vehiclesInChunk specifies the chunk size. This query reads a chunk for processing and
+    continues reading chunks until all data has been processed
+
+  errorLogFileName: path to the errorLog file
+  heartbeatFileName: path to the heartbeat file
+  locationInfoFileName: path to the LocationInfo file
+  homeInfoFileName: path to the HomeInfo file
+  evseLookupFileName: path to the lookup file of EVSEs
+  pklCensusDivisionsFileName: path to the pickled shapefile of census divisions 
+  
+  EndOfDay:
+    dayEndHours: The hour of day end
+    dayEndMinutes: The minute of day end
+
+  EVSEBoundingBox:
+    evseDistRange_Miles: Radius for finding nearby EVSEs
+    evseLatRange: Plus or minus latitude range to prefilter nearby EVSEs
+    evseLonRange: Plus or minus longitude range to prefilter nearby EVSEs
+
+  hdrErrorLogCSV: Column names for error log csv
+  hdrHomeInfoCSV: COlumn Names for HomeInfo csv
+  hdrLocationInfoCSV: Column names for LocationInfo csv
+
+  colLocationInfo: Column Names for internal structure, locationInfo
+  colHomeInfo: Column Names for internal structure, homeInfo
+
+  boundingBoxes:
+      USA_Main:     Most of the area of contiguous 48 states
+      USA_SE:       The remaining area of contiguous 48 states
+      AK_Main:      A large chunk of Alaska
+      AK_Peninsula: The peninsula of Alaska
+      AK_Arm:       The southeast arm of Alaska
+      HI:           All of the Hawaiian islands
+      Note: A trip's starting and ending coordinates are validated to see if they are within one of the bounding boxes.
+
+  gpsOdoThreshold_mi: >
+    This value allows for a little slop in GPS coordinates. Odometer mileage should never be less
+    the calculated GPS mileage, but this allows for a small amount of GPS coordinate inaccuracy.
+    Given in miles.
+
+  minTrips: Minimum number of trips to process vehicle's data
+  minLastTrips: Number of day's last trip required for determining home location in Module1
+  minPctParks: Percent of last trips required in most popular cluster for Module1 home dtermination
+
+  distancePlaces: The number of decimal place allowed for distance from home reporting
+
+  dbscan_eps_ft: epsilon value for DBSCAN parameter
+  dbscan_min_spls: minimum number of samples value for DBSCAN parameter
+
+  Validation: 
+    DoValidityChecking(vData): >
+      Calls the methods below against vData which is the vehicle data
+      The validation methods are applied to each row of vData and the Include column is tagged with True or False
+      indicating whether the row is valid to use in clustering/home detection algorithm.
+
+    InBoundingBox(vd, colLat, colLon): >
+      Checks that latitude or longitude is in one of the bounding boxes that roughly describe USA (including AK and HI)
+  
+    TryParseDateTime(vd, colname): >
+      Checks that value in the datetime column given in colname can be parsed as a datetime value
+  
+    CompareOdometerToGPS(vd, tripStart, tripEnd, stLat, stLng, enLat, enLng, threshold): >
+      Checks that vehicle odometers distance (tripEnd - tripStart) is not less that the calculated
+      distance between the start and end GPS coordinates. (disallow worm holes :-)
+  
+    Server side validation assist: >
+      Some validation occurs on the database server side -
+      The vehicleID and trip start time are required to be order. See order by in qryVehicleInfo sql statement.
+      Python is case-sensitive and the column names returned from the sql query must match the column names used
+      in the code, i.e., the sql queries provided have column names that match the python scripts case-sensitive
+      requirements. Altering the case of any column names will cause the code to fail.
+
+  Important internal data structures:
+    divisions (geopandas array): >
+      These US Census Divisions are used instead of assigning a state to the home location.
+      This gives a location sense but even more obscure that a state of th US. The divisions
+      were obtained as a shapefile from the US Census website. The shapefile was compressed into
+      a Pickle file. The "pickled" data is then simply read into the divisions object.
+
+    EVSEs: A list of charging stations thorughout the US
+    
+    firstVehicleInChunk (pandas DataFrame): > 
+      A list of vehicle IDs, but just the first one of each chunk (see vehiclesInChunk)
+      of data. This list controls the amount of data to query at a time, by controlling the number of vehicles to query at one time.
+    
+    chunkData (pandas DataFrame): > 
+      A chunk of vehicle data. Chunks of data will have vehicle data for only a certain number of
+      vehicles at one time, defined by vehiclesInChunk. (The last chunk may have less vehicles)
+    
+    chunkDataIDs (numpy ndarray): > 
+      A list of all the vehicles IDs in the current chunk.
+    
+    vData (pandas DataFrame): > 
+      The vehicle data for the vehicle currently being processed. Simply a subset of chunkData. 
+      Bad records aree removed after data validation.
+
+    vData Columns:
+      VehicleID: 
+        The ID of the vehicle
+      TripStartLocalTime: 
+        The time the trip started
+      TripEndLocalTime: 
+        The time the trip ebded
+      TripStartLatitude: 
+        The latitude at trip start
+      TripStartLongitude: 
+        The longitude at trip start
+      TripEndLatitude: 
+        The latitude at trip end
+      TripEndLongitude: 
+        The logitude at trip end
+      TripStartOdometer_Miles: 
+        The odometer reading (in miles) at trip start
+      TripEndOdometer_Miles: 
+        The odometer reading (in miles) at trip end
+      Include: 
+        True/False flag indicating whether data in this row passed validation checks
+  
+    coordsSet (numpy ndarray): > 
+      A list of all unique GPS coordinates (start and end latitude and longitude values) from vData
+
+    clusterLbls (numpy ndarray): >
+      A list of cluster IDs. The values have one-to-one correspondence with the coordsSet array.
+      They group the coordsSet records into clumps as detgermined by the clustering alorithm.
+    
+    coordsClusters (pandas Series): >
+      A list of clusters. Each index contains an array of the GPS points that have been clustered.
+  
+  Class cfg: A class that reads this YAML file for cnofiguration values used in the code
+
+  Defs:
+    main: The driving function for application
+    findHome_Module1: This module attempts to find home by evaluating the cluster with the most GPS points.
+    getEVSEDistance: Helper function that returns the havesine distance between home and EVSE location
+    getStartLocationDistance: Helper function that returns the havesine distance between home and trip start location.
+    getStartLocationDistance: Helper function that returns the havesine distance between home and trip end location.
+    processHome: Creates the HomeInfo and LocationInfo data after home has been determined
+    flagTrips: Identifies the first and last trip of the day for a vehicle
+    InBoundingBox: Validation helper - determines if location is within one of the US states bounding boxes
+    CheckDateTime: Validation helper - determines if value is a valid datetime
+    CompareOdometerToGPS: Validation helper - determines if odometer distance is reasonable
+    DoValidityChecking: Drives the validity chacking
+    clusterData: >
+      Cluster the data locations using the Density Based Spatial Clustering of Applications with Noise (DBSCAN).
+      This clustering algorhythm is part of the sklearn cluster module
+    
+  Output files:
+    heartbeat.txt: >
+      After each vehicle is processed, the vehicle ID is written to this file.
+      Should the program stop for any reason, it can be restarted and will pick up 
+      where it left off using the vehicle ID here.
+
+    errorLog.csv: >
+      Tracks any non-fatal errors that occur. Ususally just validity check infomation.
+
+    HomeInfo.csv: >
+      This file and LocationInfo.csv are the two main output files. This file shows the
+      home location(s) that were determined for each vehicle. The details are available
+      in other documentation.
+
+    LocationInfo.csv: >
+      This shows the info for each each trip, including distances from home. See details
+      in other documentation.
