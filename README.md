@@ -53,7 +53,7 @@ The user also needs to install several Python libraries. This is done from the C
 
 ***To install Fiona***
 
-> Go to https://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona and download the GDAL wheel.
+> Go to https://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona and download the Fiona wheel.
 > Find Fiona-1.8.18-cp*XX*-cp*XX*m-win_amd64.whl and download,
 > where *XX* matches your Python version.
 > For example: Fiona-1.8.18-cp*37*-cp*37*m-win_amd64.whl
