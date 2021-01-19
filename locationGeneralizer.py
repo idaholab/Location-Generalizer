@@ -193,7 +193,7 @@ def main():
                 vData = flagTrips(v, vData)
                 ### Find clusters of vehicle locations
                 if cfg.verbose > 1: print(' Clustering')
-                vData, clusterData(v, vData)
+                vData = clusterData(v, vData)
 
                 # drop rows - remove previous vehicle info
                 homeInfo.drop(homeInfo.index, inplace=True)
