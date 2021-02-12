@@ -228,8 +228,8 @@ Table 2. Contents of Location Info output file
 | TripEndLocalTime                | Local date and time at the end of each trip  (i.e., time at key-off) | Date/time                                                | yyyy/mm/dd HH:mm:ss |
 | TripStartDistanceFromHome_Miles | Straight-line distance between the vehicle’s parked location at the start of trip and its primary home location at this time. If there is no primary home location identified at this time, this field is NULL. | Miles                                                    |                 XXX<br>(i.e., integer) |
 | TripEndDistanceFromHome_Miles   | Straight-line distance between the vehicle’s parked location at the end of trip and its primary home location at this time. If there is no primary home location identified at this time, this field is NULL. | Miles                                                    |                 XXX<br>(i.e., integer) |
-| TripStartLocationCategory       | Description of vehicle parked location at start of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away ,’ or ‘unknown’ |                 n/a |
-| TripEndLocationCategory         | Description of vehicle parked location at end of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away ,’ or ‘unknown’ |                 n/a |
+| TripStartLocationCategory       | Description of vehicle parked location at start of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away,’ or ‘unknown’ |                 n/a |
+| TripEndLocationCategory         | Description of vehicle parked location at end of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away,’ or ‘unknown’ |                 n/a |
 
 ***Home Info***
 
