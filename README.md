@@ -1,6 +1,7 @@
 ## Location Generalizer
 
-Revision Log
+### **Revision Log**
+
 Release 1.01 included the following changes:
 *	Added Python library sqldf
 *	Updated algorithm for classifying vehicle home location and handling multiple home locations for the same vehicle
