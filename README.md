@@ -1,6 +1,14 @@
 ## Location Generalizer
 
-Revision: 12/31/2020
+Revision Log
+Release 1.01 included the following changes:
+*	Added Python library sqldf
+*	Updated algorithm for classifying vehicle home location and handling multiple home locations for the same vehicle
+*	Added new fields (TripStartHomeID, TripEndHomeID) to Location Info output file for clarity when there are multiple home locations for the same vehicle 
+*	Added new field (HomeID) to Home Info output file for clarity when there are multiple home locations for the same vehicle
+*	Changed precision of PublicChargingDensityL2 to be rounded to the nearest 100 charging sites
+	Changed precision of PublicChargingDensityDCFC to be rounded to the nearest 10 charging sites
+*	Updated error handling to write new error cases to error log
 
 ### **Overview**
 
@@ -16,7 +24,7 @@ Location Generalizer, hereafter referred to as "the software," consist of Python
 
 To run the software, the user will need to install an open-source Python interpreter, downloadable from python.org. The software was developed using Python 3.7.8 from python.org. Running the software in an earlier version of Python may produce errors.
 
-The user also needs to install several Python libraries. This is done from the Command Prompt (CMD). (It is recommended that CMD be run as administrator):
+The user also needs to install the following Python libraries in the order listed. This is done from the Command Prompt (CMD). It is recommended that CMD be run as administrator:
 
 `python -m pip install pyodbc`
 
@@ -33,6 +41,8 @@ The user also needs to install several Python libraries. This is done from the C
 `python -m pip install haversine`
 
 `python -m pip install pynput`
+
+`python -m pip install sqldf`
 
 ***To install GDAL***
 
@@ -100,7 +110,7 @@ The software is self-contained, meaning that it does *not* require connecting to
 
 ***Creating the Input Table***
 
-The user shall create the input table in their database that contains the following fields:
+The user shall create the input table in their database that contains the fields shown in Table 1:
 
 Table 1. Required fields in input table
 
@@ -125,7 +135,7 @@ requirements:
 
 To improve performance, a non-clustered index should be added to the table. The following example code can be used to add a non-clustered index to a table in Microsoft SQL Server:
 
-> create nonclustered index idx_2 on EVPInput<br>(VehicleID, TripStartLocalTime, TripStartLatitude, TripStartLongitude,<br>TripEndLatitude, TripEndLongitude, TripStartOdometer_Miles, TripEndOdometer_Miles)<br>include (TripEndLocalTime)
+> create nonclustered index idx_2 on [input table name]<br>(VehicleID, TripStartLocalTime, TripStartLatitude, TripStartLongitude,<br>TripEndLatitude, TripEndLongitude, TripStartOdometer_Miles, TripEndOdometer_Miles)<br>include (TripEndLocalTime)
 
 ***Connecting the Software to the Database***
 
@@ -178,13 +188,22 @@ considered as in the neighborhood of the other, is set to 0.0305 km (100 ft). Th
 
 ***Determining Vehicle Home Location***
 
-Currently, a single heuristic is used to identify the parked location cluster for each vehicle that is the vehicle's home location, as follows:
+The software uses a simple but effective classification decision tree model to predict the home location(s) for each vehicle. The software classifies parking location clusters as ‘home’ or ‘away’ (i.e., not home) for all vehicles for which sufficient data is available. The software is tuned to avoid falsely classifying a home location as ‘away’ (false negative). The following criteria must be met in order for the software to classify a vehicle’s home location:
 
-> For vehicles where number of days with a known last trip of the day \>= 30, set home equal to the ClusterID with \> 94% of parks after the last trip of the day
+1.	The last trip of the day can be positively identified for the vehicle on at least 30 days
+2.	For at least one parking location cluster, there were more than 21 days between the first and last parking event in the cluster (i.e., at that location)
+3.	For at least one parking location cluster, there are 15 or more parking events in the cluster
 
-For each vehicle day, the last trip of the day is defined as the last trip that ends before 3:30 am of the following day. To be considered a known last trip of the day, the difference between the odometer at the end of the last logged trip of the day and the first logged trip of the next day (i.e. the first trip that started after 3:30 am of the next day) must be between 1 and -1 mile.
+For vehicles meeting the above criteria, clusters are classified as ‘home’ if either of the following two conditions are met:
 
-The authors estimate that this criteria will classify the home location of about two-thirds of vehicles in the user's database. This single rule will be replaced with a more complex machine learning model in the near future to classify the home location for a much greater fraction of vehicles.
+1.	The last trip of the day ends in the cluster (i.e., at that location) on over 65% of the days on which the last trip can be positively identified <br>
+&lt;or&gt;
+2.	The last trip of the day ends in the cluster on 65% or fewer of the days with known last trips, and the total time spent parked in the cluster per complete driving day is greater than 9 hours.<br>
+A complete day is defined as a day with no missing miles (i.e., no increments in the odometer) between logged trips.
+
+If neither of these conditions are met, the cluster is classified as ‘away.’
+
+Because vehicles may have multiple home locations and/or the home location(s) may change over time, each distinct home location (i.e., cluster classified as ‘home’) for each vehicle is assigned a unique ID. For periods of time when there are multiple home locations for a vehicle, the primary home location is determined. The primary home is defined as the home location where the vehicle is most often parked after the last trip of the day during the period with multiple homes. Note that there also may be periods of time when there is no home location identified for a vehicle. 
 
 ***Calculating and writing output metrics***
 
@@ -202,12 +221,14 @@ Table 2. Contents of Location Info output file
 | Field Name                      | Description                                                  | Units                                                    |           Precision |
 | ------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------- | ------------------: |
 | VehicleID                       | Unchanging, unique, arbitrary ID that  distinguishes each vehicle; the ID shall be unique across all vehicle models  from same manufacturer | n/a                                                      |             Integer |
+| TripStartHomeID                 | HomeID of the home location where the vehicle is parked at the beginning of the trip. If the vehicle is not parked at a home location or if there is no home location identified at this time, then this field is NULL | n/a                                                      |             Integer |
+| TripEndHomeID                   | HomeID of the home location where the vehicle is parked at the end of the trip. If the vehicle is not parked at a home location or if there is no home location identified at this time, then this field is NULL | n/a                                                      |             Integer |
 | TripStartLocalTime              | Local date and time at the beginning of each  trip (i.e., time at key-on) | Date/time                                                | yyyy/mm/dd HH:mm:ss |
 | TripEndLocalTime                | Local date and time at the end of each trip  (i.e., time at key-off) | Date/time                                                | yyyy/mm/dd HH:mm:ss |
-| TripStartDistanceFromHome_Miles | Straight-line distance between the vehicle’s  parked location at the start of trip and its home location | Miles                                                    |                 XXX |
-| TripEndDistanceFromHome_Miles   | Straight-line distance between the vehicle’s  parked location at the start of trip and its home location | Miles                                                    |                 XXX |
-| TripStartLocationCategory       | Description of vehicle parked location at  start of trip     | Possible values: “home,” “away from home,”  or “unknown” |                 n/a |
-| TripEndLocationCategory         | Description of vehicle parked location at  end of trip       | Possible values: “home,” “away from home,”  or “unknown” |                 n/a |
+| TripStartDistanceFromHome_Miles | Straight-line distance between the vehicle’s parked location at the start of trip and its primary home location at this time. If there is no primary home location identified at this time, this field is NULL. | Miles                                                    |                 XXX<br>(i.e., integer) |
+| TripEndDistanceFromHome_Miles   | Straight-line distance between the vehicle’s parked location at the start of trip and its primary home location at this time. If there is no primary home location identified at this time, this field is NULL. | Miles                                                    |                 XXX<br>(i.e., integer) |
+| TripStartLocationCategory       | Description of vehicle parked location at start of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away ,’ or ‘unknown’ |                 n/a |
+| TripEndLocationCategory         | Description of vehicle parked location at end of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away ,’ or ‘unknown’ |                 n/a |
 
 ***Home Info***
 
@@ -218,15 +239,18 @@ Table 3. Contents of Home Info output file
 | Field Name                | Description                                                  | Units                    |           Precision |
 | ------------------------- | ------------------------------------------------------------ | ------------------------ | ------------------: |
 | VehicleID                 | Unchanging, unique, arbitrary ID that   distinguishes each vehicle; the ID shall be unique across all vehicle models   from same manufacturer | n/a                      |             Integer |
+| HomeID                    | Unchanging, unique, arbitrary ID that distinguishes each distinct home location for a single vehicle | n/a                      |             Integer |
 | HomeStartLocalTime        | Local date and time that defines beginning   of the period when the location is known to be the vehicle’s home (based on   TripEndLocalTime) | Date/time                | yyyy/mm/dd HH:mm:ss |
 | HomeEndLocalTime          | Local date and time that defines end of the   period when the location is known to be the vehicle’s home (based on   TripEndLocalTime) | Date/time                | yyyy/mm/dd HH:mm:ss |
 | HomeRegion                | U.S. region in which   vehicle home location resides (see below for more information) | n/a                      |         Text string |
-| PublicChargingDensityL2   | Number of public AC Level 2 charging sites   within 25 miles of home location* | Number of charging sites |                 XXX |
-| PublicChargingDensityDCFC | Number of public DC fast charging sites   within 25 miles of home location* | Number of charging sites |                 XXX |
+| PublicChargingDensityL2   | Number of public AC Level 2 charging sites   within 25 miles of home location* | Number of charging sites | Rounded to the nearest 100 charging sites** |
+| PublicChargingDensityDCFC | Number of public DC fast charging sites   within 25 miles of home location* | Number of charging sites | Rounded to the nearest 10 charging sites** |
 
 
 
 \* Public AC Level 2 and DC fast charging sites of any brand or connector type within 25 miles of home are counted, regardless of compatibility with the vehicle.
+
+\** If there are no charging sites within 25 miles, this field will show -1
 
 ***Determination of HomeRegion***
 
@@ -248,7 +272,7 @@ Table 4. States in each U.S. Census Division
 
 ***Error Log***
 
-The error log file provides the number of records for each vehicle that failed validity checks, and the VehicleIDs that were not processed because they had less than 30 trips. It also lists the VehicleIDs whose home location was not determined because the vehicle had less than 30 days with known last trips. Finally, if data processing is interrupted, the error log records the last VehicleID to finish processing. See below for more information on handling incomplete analysis runs.
+The error log file provides the number of records for each vehicle that failed validity checks, and the VehicleIDs that were not processed because they had less than 30 trips. It also lists the VehicleIDs whose home location was not determined because the vehicle had less than 30 days with known last trips or because no clusters had sufficient data. VehicleIDs that had no home location identified are also written to the error log. Finally, if data processing is interrupted, the error log records the last VehicleID to finish processing. See below for more information on handling incomplete analysis software runs.
 
 ### Instructions for Running Software
 
