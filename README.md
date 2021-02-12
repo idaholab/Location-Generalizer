@@ -10,6 +10,7 @@ Release 1.01 included the following changes:
 *	Changed precision of PublicChargingDensityL2 to be rounded to the nearest 100 charging sites
 	Changed precision of PublicChargingDensityDCFC to be rounded to the nearest 10 charging sites
 *	Updated error handling to write new error cases to error log
+*	Keyboard interaction removed for performance gains
 
 ### **Overview**
 
@@ -310,7 +311,7 @@ Or, if you have created the compiled version, execute:
 
 ***Monitoring Progress***
 
-The software has a verbosity setting that allows the user to change how much information is written to the screen as the software runs. The verbosity setting defaults to 0. While the software is running, the user can hit the `v` key to toggle between verbosity settings 0, 1, and 2.
+The software has a verbosity setting that allows the user to change how much information is written to the screen as the software runs. The verbosity setting defaults to 0. This setting can be changed in the locationGeneralizer.yml configuration file to 0, 1, or 2. 
 
 When verbosity = 0, the software will display the group of VehicleIDs currently being processed (recall that the software processes batches of 200 vehicles). It will also display the VehicleID of the last vehicle to complete processing if the process stopped and is restarted.
 
@@ -320,9 +321,9 @@ When verbosity = 2, the software will also notify the user when each processing 
 
 ***Stopping Processing and Managing Unintentional Interruptions***
 
-To purposefully stop a software run (i.e., stop processing data), the user can hit the `q` key at any time. The software will stop after it finishes processing the current vehicle. If `q` is hit accidentally, the user can hit `q` a second time to cancel the stop request.
+To purposefully stop a software run (i.e., stop processing data), the user can hit the Ctrl-C key at any time. Processing on the current vehicle will stop immediately.
 
-If processing is unintentionally interrupted due to a lost database server connection or other reason, the software must be manually restarted. However, the software will recognize the VehicleID of the last vehicle that completed processing and begin processing the next vehicle to avoid duplication.
+Interruption can also occur unintentionally due to a lost database server connection or other reasons. However, the software can be manually restarted and will recognize the VehicleID of the last vehicle that completed processing and begin processing the next vehicle to avoid duplication.
 
 ### Other Software
 
