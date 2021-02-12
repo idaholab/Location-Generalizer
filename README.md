@@ -323,7 +323,7 @@ When verbosity = 2, the software will also notify the user when each processing 
 
 To purposefully stop a software run (i.e., stop processing data), the user can hit the Ctrl-C key at any time. Processing on the current vehicle will stop immediately.
 
-Interruption can also occur unintentionally due to a lost database server connection or other reasons. However, whether the interruption was intentional or not, the software can be manually restarted and will recognize the VehicleID of the last vehicle that completed processing and begin processing the next vehicle to avoid duplication.
+Interruption can also occur unintentionally due to a lost database server connection or other reasons. However, whether the interruption was intentional or not, the software must be manually restarted. It will recognize the VehicleID of the last vehicle that completed processing and begin processing the next vehicle to avoid duplication.
 
 ### Other Software
 
