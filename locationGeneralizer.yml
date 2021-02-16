@@ -3,15 +3,17 @@
 #  Mobility Systems & Analytics Group, Idaho National Laboratory       #
 ########################################################################
 
-# Database connection string (SQL Server in this case)
+######## Database connection string (SQL Server in this case)
 odbcConnectionString: Driver={SQL Server};Server=AVTPRD.inl.gov,1433;Database=EVProjVehicles;Trusted_Connection=Yes;
 inputTableOrCSV: EVPInput
+########
 
-# CSV file connection string
+######## CSV file connection string
 #odbcConnectionString: DSN=EVPInput
 #inputTableOrCSV: EVPInput.csv
+########
 
-vehiclesInChunk: 200
+vehiclesInChunk: 20
 qryVehicleIDList: SELECT distinct VehicleID FROM {inputsrc} where VehicleID > {startVehicle} order by VehicleID
 qryVehicleInfo: >
     SELECT VehicleID, TripStartLocalTime, TripEndLocalTime, 
@@ -37,6 +39,10 @@ homeInfoFileName: './data/HomeInfo.csv'
 evseLookupFileName: './data/AFDC_Stations.csv'
 pklCensusDivisionsFileName: './data/divisions.pkl'
 
+verbosity: 0
+
+doCheck: True
+
 dayEndHours: 3
 dayEndMinutes: 30
 
@@ -47,11 +53,15 @@ evseLonRange: 0.5
 hdrErrorLogCSV:
   - ['Timestamp', 'VehicleID', 'ErrorCode', 'Description']
 hdrLocationInfoCSV:
-  - ['VehicleID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLocationCategory', 'TripEndLocationCategory']
+#  - ['VehicleID', 'TripStartHomeID', 'TripEndHomeID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLatitude', 'TripStartLongitude', 'TripEndLatitude', 'TripEndLongitude', 'TripStartLocationCategory', 'TripEndLocationCategory',  'TripStartClusterID', 'TripEndClusterID']
+  - ['VehicleID', 'TripStartHomeID', 'TripEndHomeID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLocationCategory', 'TripEndLocationCategory']
 hdrHomeInfoCSV: 
-  - ['VehicleID', 'HomeStartLocalTime', 'HomeEndLocalTime', 'HomeRegion', 'PublicChargingDensityL2', 'PublicChargingDensityDCFC']
+#  - ['VehicleID', 'HomeID', 'HomeStartLocalTime', 'HomeEndLocalTime', 'HomeRegion', 'PublicChargingDensityL2', 'PublicChargingDensityDCFC', 'CentroidLatitude', 'CentroidLongitude', 'Primary']
+  - ['VehicleID', 'HomeID', 'HomeStartLocalTime', 'HomeEndLocalTime', 'HomeRegion', 'PublicChargingDensityL2', 'PublicChargingDensityDCFC']
 colLocationInfo:
   - VehicleID
+  - TripStartHomeID
+  - TripEndHomeID
   - TripStartLocalTime
   - TripEndLocalTime
   - TripStartDistanceFromHome_Miles
@@ -66,11 +76,15 @@ colLocationInfo:
   - TripEndClusterID
 colHomeInfo:
   - VehicleID
+  - HomeID
   - HomeStartLocalTime
   - HomeEndLocalTime
   - HomeRegion
   - PublicChargingDensityL2
   - PublicChargingDensityDCFC
+  - CentroidLatitude
+  - CentroidLongitude
+  - Primary
 
 boundingBoxes:
   USA_Main:
@@ -97,7 +111,8 @@ minTrips: 30
 minLastTrips: 30
 minPctParks: 0.94
 
-distancePlaces: 0
+numL2Rounding: -2 # rounds to nearest 100
+numDCRounding: -1 # rounds to nearest 10
 
 dbscan_eps_ft: 100
 dbscan_min_spls: 1
