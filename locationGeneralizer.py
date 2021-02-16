@@ -3,6 +3,9 @@
 #  Mobility Systems & Analytics Group, Idaho National Laboratory       #
 ########################################################################
 
+# Location Generalizer
+# Release 1.0 2/16/2021
+
 import pyodbc
 import pandas as pd
 import pickle
@@ -200,8 +203,8 @@ def main():
                 ########################
                 #### PROCESS HOME AND LOCATION INFO returns the data we want to push as output files
                 if cfg.verbosity > 1: print(' Calculating output metrics')
-                locationInfo, homeInfo = processHome(v, divisions, vData, locationInfo, homeInfo, homeClusters, EVSEs)
-                if homeInfo.empty:
+                isOK, locationInfo, homeInfo = processHome(v, divisions, vData, locationInfo, homeInfo, homeClusters, EVSEs)
+                if not isOK:
                     continue
                 ########################
 
@@ -453,7 +456,6 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
         CP = geometry.Point(CP.y, CP.x)
         for i, division in divisions.iterrows():
             if division.geometry.contains(CP):
-                isDivisionFound = True
                 st = EVSEs[(EVSEs['Latitude'] > (CP.y - cfg.evseLatRange)) & 
                             (EVSEs['Latitude'] < (CP.y + cfg.evseLatRange)) & 
                             (EVSEs['Longitude'] > (CP.x - cfg.evseLonRange)) & 
@@ -483,7 +485,7 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
 
     if homeInfo.empty:
         cfg.errorWriter.writerow([datetime.now(), v, -1,'No usable clusters found for homeInfo - vehicle skipped.'])
-        return vLocationInfo, homeInfo
+        return False, vLocationInfo, homeInfo
 
 
     # vehicles with only one home are marked as the primary home and primary home detection below is skipped
@@ -498,6 +500,12 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
         eranges['period'] = 'e'
         # assemble period start/end dates into sorted list of dates
         ranges = sranges.append(eranges)
+        numDates = len(ranges['TripEndDateOffset'])
+        numUniqDates = len(set(ranges['TripEndDateOffset']))
+        if numDates != numUniqDates:
+            cfg.errorWriter.writerow([datetime.now(), v, -1,'Range dates are not unique - vehicle skipped.'])
+            return False, vLocationInfo, homeInfo
+
         ranges = ranges.sort_values(by=['TripEndDateOffset'])
         # make date ranges from first date to second date, second date to third date, etc.
         rangesEnd =  ranges.shift(-1)
@@ -669,7 +677,7 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
                 vrow[tripDist] = math.ceil(haversine((row[TripLatitude+1], row[TripLongitude+1]), (hm['CentroidLatitude'], hm['CentroidLongitude']), unit=Unit.MILES))
 
             vLocationInfo.iloc[row.Index] = vrow
-    return vLocationInfo, homeInfo
+    return True, vLocationInfo, homeInfo
 
 def flagTrips(v, vData):
     # use offset as end/start of day, e.g. 3:30 AM
