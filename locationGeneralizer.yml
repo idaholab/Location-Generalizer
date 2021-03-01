@@ -4,7 +4,7 @@
 ########################################################################
 
 ######## Database connection string (SQL Server in this case)
-odbcConnectionString: Driver={SQL Server};Server=AVTPRD.inl.gov,1433;Database=EVProjVehicles;Trusted_Connection=Yes;
+odbcConnectionString: Driver={SQL Server};Server=[server],[port];Database=[database-name];Trusted_Connection=Yes;
 inputTableOrCSV: EVPInput
 ########
 
