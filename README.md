@@ -48,7 +48,7 @@ The user also needs to install the following Python libraries in the order liste
 
 ***To install GDAL***
 
->Go to https://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona and download the GDAL wheel.
+>Go to https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal and download the GDAL wheel.
 >Find GDAL-3.1.4-cp*XX*-cp*XX*m-win_amd64.whl and download,
 >where *XX* matches your Python version.
 >For example: GDAL-3.1.4-cp*37*-cp*37*m-win_amd64.whl
@@ -127,6 +127,8 @@ Table 1. Required fields in input table
 | TripEndLongitude        | Vehicle GPS longitude at end of trip                         | Decimal degrees |           XXX.XXXXX |
 | TripStartOdometer_Miles | Cumulative odometer reading at start of trip                 | Miles           |             XXX,XXX |
 | TripEndOdometer_Miles   | Cumulative odometer reading at end of trip                   | Miles           |             XXX,XXX |
+| TripStartClusterID      | A unique serial number, within the vehicle's trips, identifying the cluster to which this start of trip is a member | n/a           |             Integer |
+| TripEndClusterID        | A unique serial number, within the vehicle's trips, identifying the cluster to which this end of trip is a member | n/a           |             Integer |
 
 The input table shall be created to meet the following additional
 requirements:
