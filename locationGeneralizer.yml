@@ -75,8 +75,6 @@ colLocationInfo:
   - TripEndLongitude
   - TripStartLocationCategory
   - TripEndLocationCategory
-  - TripStartClusterID
-  - TripEndClusterID
 colClusterLocationInfo:
   - VehicleID
   - TripStartHomeID
