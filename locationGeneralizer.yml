@@ -4,7 +4,7 @@
 ########################################################################
 
 ######## Database connection string (SQL Server in this case)
-odbcConnectionString: Driver={SQL Server};Server=[server],[port];Database=[database-name];Trusted_Connection=Yes;
+odbcConnectionString: Driver={SQL Server};Server=AVTPRD.inl.gov,1433;Database=EVProjVehicles;Trusted_Connection=Yes;
 inputTableOrCSV: EVPInput
 ########
 
@@ -14,6 +14,7 @@ inputTableOrCSV: EVPInput
 ########
 
 vehiclesInChunk: 20
+#qryVehicleIDList: SELECT distinct VehicleID FROM {inputsrc} where VehicleID between 99488 and 99507 order by VehicleID
 qryVehicleIDList: SELECT distinct VehicleID FROM {inputsrc} where VehicleID > {startVehicle} order by VehicleID
 qryVehicleInfo: >
     SELECT VehicleID, TripStartLocalTime, TripEndLocalTime, 
@@ -50,15 +51,33 @@ evseDistRange_Miles: 25.0
 evseLatRange: 0.4
 evseLonRange: 0.5
 
+addClusterIDtoLocationInfo: True
+
 hdrErrorLogCSV:
   - ['Timestamp', 'VehicleID', 'ErrorCode', 'Description']
 hdrLocationInfoCSV:
-#  - ['VehicleID', 'TripStartHomeID', 'TripEndHomeID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLatitude', 'TripStartLongitude', 'TripEndLatitude', 'TripEndLongitude', 'TripStartLocationCategory', 'TripEndLocationCategory',  'TripStartClusterID', 'TripEndClusterID']
   - ['VehicleID', 'TripStartHomeID', 'TripEndHomeID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLocationCategory', 'TripEndLocationCategory']
+hdrClusterLocationInfoCSV:
+  - ['VehicleID', 'TripStartHomeID', 'TripEndHomeID', 'TripStartLocalTime', 'TripEndLocalTime', 'TripStartDistanceFromHome_Miles', 'TripEndDistanceFromHome_Miles', 'TripStartLocationCategory', 'TripEndLocationCategory',  'TripStartClusterID', 'TripEndClusterID']
 hdrHomeInfoCSV: 
-#  - ['VehicleID', 'HomeID', 'HomeStartLocalTime', 'HomeEndLocalTime', 'HomeRegion', 'PublicChargingDensityL2', 'PublicChargingDensityDCFC', 'CentroidLatitude', 'CentroidLongitude', 'Primary']
   - ['VehicleID', 'HomeID', 'HomeStartLocalTime', 'HomeEndLocalTime', 'HomeRegion', 'PublicChargingDensityL2', 'PublicChargingDensityDCFC']
 colLocationInfo:
+  - VehicleID
+  - TripStartHomeID
+  - TripEndHomeID
+  - TripStartLocalTime
+  - TripEndLocalTime
+  - TripStartDistanceFromHome_Miles
+  - TripEndDistanceFromHome_Miles
+  - TripStartLatitude
+  - TripStartLongitude
+  - TripEndLatitude
+  - TripEndLongitude
+  - TripStartLocationCategory
+  - TripEndLocationCategory
+  - TripStartClusterID
+  - TripEndClusterID
+colClusterLocationInfo:
   - VehicleID
   - TripStartHomeID
   - TripEndHomeID

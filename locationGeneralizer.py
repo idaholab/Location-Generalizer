@@ -4,7 +4,7 @@
 ########################################################################
 
 # Location Generalizer
-# Release 1.0 2/16/2021
+# Release 1.1 6/27/2021
 
 import pyodbc
 import pandas as pd
@@ -64,10 +64,18 @@ class cfg():
     evseLatRange = config['evseLatRange']
     evseLonRange = config['evseLonRange']
 
+    addClusterIDtoLocationInfo = config['addClusterIDtoLocationInfo']
+
     hdrErrorLogCSV = config['hdrErrorLogCSV']
-    hdrLocationInfoCSV = config['hdrLocationInfoCSV']
+    if addClusterIDtoLocationInfo:
+        hdrLocationInfoCSV = config['hdrClusterLocationInfoCSV']
+    else:
+        hdrLocationInfoCSV = config['hdrLocationInfoCSV']
     hdrHomeInfoCSV = config['hdrHomeInfoCSV']
-    colLocationInfo = config['colLocationInfo']
+    if addClusterIDtoLocationInfo:
+        colLocationInfo = config['colClusterLocationInfo']
+    else:
+        colLocationInfo = config['colLocationInfo']
     colHomeInfo = config['colHomeInfo']
 
     verbosity = config['verbosity']
@@ -209,10 +217,12 @@ def main():
                 ########################
 
                 ############################# IMPORTANT #########################################
-                #  CLEANUP HONEINFO AND LOCATIONINFO FOR EXPORT (remove sensitive data)
+                #  CLEANUP HOMEINFO AND LOCATIONINFO FOR EXPORT (remove sensitive data)
                 homeInfo.drop(homeInfo[homeInfo['Primary'].isnull()].index, inplace=True)
                 homeInfo.drop(['CentroidLatitude', 'CentroidLongitude', 'Primary'], axis=1, inplace=True)
-                locationInfo.drop(['TripStartLatitude','TripStartLongitude','TripEndLatitude','TripEndLongitude','TripStartClusterID','TripEndClusterID'], axis=1, inplace=True)
+                locationInfo.drop(['TripStartLatitude','TripStartLongitude','TripEndLatitude','TripEndLongitude'], axis=1, inplace=True)
+                if not cfg.addClusterIDtoLocationInfo:
+                    locationInfo.drop(['TripStartClusterID','TripEndClusterID'], axis=1, inplace=True)
                 #################################################################################
 
                 # write to output files
@@ -608,9 +618,9 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
     ### Update vLocationInfo
     for se in ['Start', 'End']:
         # This mapping of column names to column index is nasty, but helps with performance.
-        # Using the itertuples construct is much faster and is now used instead of iterrows. Iterrows
-        # would allow for easire, more inteligible coding but tuples are more performant. Using
-        # iterrows does not allow for so the column indexes must change instead.
+        # The mapping is necessary in order to use the itertuples construct which is much faster 
+        # and is now used instead of iterrows. 
+        # So, although iterrows are easier to use, tuples are more performant. 
         if se == 'Start':
             tripLocation = 11  
             tripTime = 3
