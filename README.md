@@ -233,8 +233,8 @@ Table 2. Contents of Location Info output file
 | TripEndDistanceFromHome_Miles   | Straight-line distance between the vehicle’s parked location at the end of trip and its primary home location at this time. If there is no primary home location identified at this time, this field is NULL. | Miles                                                    |                 XXX<br>(i.e., integer) |
 | TripStartLocationCategory       | Description of vehicle parked location at start of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away,’ or ‘unknown’ |                 n/a |
 | TripEndLocationCategory         | Description of vehicle parked location at end of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away,’ or ‘unknown’ |                 n/a |
-| TripStartClusterID      | A unique serial number identifying each distinct location (i.e., centroid of clustered GPS coordinates) where the vehicle was parked prior to the start of the trip. | n/a           |             Integer |
-| TripEndClusterID        | A unique serial number identifying each distinct location (i.e., centroid of clustered GPS coordinates) where the vehicle was parked after the end of the trip. | n/a           |             Integer |
+| TripStartClusterID      | For each VehicleID, a unique serial number identifying each distinct location (i.e., centroid of clustered GPS coordinates) where the vehicle was parked prior to the start of the trip. | n/a           |             Integer |
+| TripEndClusterID        | For each VehicleID, a unique serial number identifying each distinct location (i.e., centroid of clustered GPS coordinates) where the vehicle was parked after the end of the trip. | n/a           |             Integer |
 
 ***Home Info***
 
