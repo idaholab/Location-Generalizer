@@ -128,8 +128,7 @@ Table 1. Required fields in input table
 | TripEndLongitude        | Vehicle GPS longitude at end of trip                         | Decimal degrees |           XXX.XXXXX |
 | TripStartOdometer_Miles | Cumulative odometer reading at start of trip                 | Miles           |             XXX,XXX |
 | TripEndOdometer_Miles   | Cumulative odometer reading at end of trip                   | Miles           |             XXX,XXX |
-| TripStartClusterID      | A unique serial number, within the vehicle's trips, identifying the cluster to which this start of trip is a member | n/a           |             Integer |
-| TripEndClusterID        | A unique serial number, within the vehicle's trips, identifying the cluster to which this end of trip is a member | n/a           |             Integer |
+
 
 The input table shall be created to meet the following additional
 requirements:
@@ -234,6 +233,8 @@ Table 2. Contents of Location Info output file
 | TripEndDistanceFromHome_Miles   | Straight-line distance between the vehicle’s parked location at the end of trip and its primary home location at this time. If there is no primary home location identified at this time, this field is NULL. | Miles                                                    |                 XXX<br>(i.e., integer) |
 | TripStartLocationCategory       | Description of vehicle parked location at start of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away,’ or ‘unknown’ |                 n/a |
 | TripEndLocationCategory         | Description of vehicle parked location at end of trip. If there is no home location identified at this time, this field is ‘unknown.’ | Possible values: ‘home,’ ‘away,’ or ‘unknown’ |                 n/a |
+| TripStartClusterID      | A unique serial number, within the vehicle's trips, identifying the cluster to which this start of trip is a member | n/a           |             Integer |
+| TripEndClusterID        | A unique serial number, within the vehicle's trips, identifying the cluster to which this end of trip is a member | n/a           |             Integer |
 
 ***Home Info***
 
