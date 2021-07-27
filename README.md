@@ -47,7 +47,9 @@ The user also needs to install the following Python libraries in the order liste
 
 `python -m pip install pynput`
 
-`python -m pip install sqldf`
+`python -m pip install sqlalchemy`
+
+`python -m pip install pandasql`
 
 ***To install GDAL***
 
