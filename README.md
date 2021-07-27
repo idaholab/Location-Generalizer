@@ -4,6 +4,8 @@
 
 Release 1.1 included the following changes:
 *	Cluster ID was added for start and end of trip
+
+Release 1.0 included the following changes:
 *	Added Python library sqldf
 *	Updated algorithm for classifying vehicle home location and handling multiple home locations for the same vehicle
 *	Added new fields (TripStartHomeID, TripEndHomeID) to Location Info output file for clarity when there are multiple home locations for the same vehicle 
