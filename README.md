@@ -3,7 +3,7 @@
 ### **Revision Log**
 
 Release 1.1 included the following changes:
-*	Cluster ID was added for start and end of trip
+*	Cluster ID for start and end of trip was added to LocationInfo output
 
 Release 1.0 included the following changes:
 *	Added Python library sqldf
