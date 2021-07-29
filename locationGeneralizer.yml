@@ -51,7 +51,7 @@ evseDistRange_Miles: 25.0
 evseLatRange: 0.4
 evseLonRange: 0.5
 
-addClusterIDtoLocationInfo: True
+addClusterIDtoLocationInfo: False
 
 hdrErrorLogCSV:
   - ['Timestamp', 'VehicleID', 'ErrorCode', 'Description']
