@@ -134,6 +134,8 @@ numDCRounding: -1 # rounds to nearest 10
 dbscan_eps_ft: 100
 dbscan_min_spls: 1
 
+num_cores: 8 # number of cores to use in parallel processing
+
 documentation: 
   odbcConnectionString: >
     This value must be tailored to the user's database environment. 

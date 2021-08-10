@@ -22,6 +22,10 @@ from shapely.geometry import MultiPoint
 from haversine import haversine, Unit
 import pynput
 from pandasql import sqldf
+import time
+
+from location_generalizer.utils import parallel_func_wrapper_update_vlocation
+from location_generalizer.dataclasses import StartSEColumnMappings, EndSEColumnMappings
 
 class cfg():
     with open('locationGeneralizer.yml') as f:
@@ -81,6 +85,8 @@ class cfg():
     verbosity = config['verbosity']
     stopProcessing = False
 
+    numCores = config['num_cores']
+
     errFilePath = Path(errorLogFileName)
     if not errFilePath.exists():
         # ErroLog output file
@@ -135,6 +141,7 @@ def main():
     chunks = [vehicleList[i * numOfVehicles:(i+1)*numOfVehicles] for i in range((len(vehicleList) + numOfVehicles -1) // numOfVehicles)]
     i = 0
     vcnt = 0
+
     for chunk in chunks:
         chunkList = ','.join(str(e) for e in chunk)
         qry = cfg.qryVehicleInfo.format(chunkList) # insert vehicleIDs into "in" list
@@ -172,10 +179,12 @@ def main():
             # toss out rows that failed vailidity check
             vData = vData[vData.Include == True]
             numTrips = len(vData)
+
             if numTrips < cfg.minTrips:
                 if cfg.verbosity > 1: print(' Not enough trips, vehicle skipped.')
                 cfg.errorWriter.writerow([datetime.now(), v, -1,'Not enough trips, vehicle skipped. ({} need >= {})'.format(numTrips, cfg.minTrips)])
             else:
+
                 # create new column for identify first/last trip of day
                 vData['TripFlag'] = None
                 ### Identify first and last of trip of day
@@ -224,7 +233,7 @@ def main():
                 if not cfg.addClusterIDtoLocationInfo:
                     locationInfo.drop(['TripStartClusterID','TripEndClusterID'], axis=1, inplace=True)
                 #################################################################################
-
+            
                 # write to output files
                 if cfg.verbosity > 1: print(' Writing to output files')
                 locationInfo.to_csv(cfg.locationInfoFileName, index=False, header=False, mode='a')
@@ -437,15 +446,15 @@ def isInRange(se, homeStartEnd, locationTime):
             return True
         return False
 
-def isInTupleRange(se, start, end, locationTime):
-    if se == 'Start':
-        if start < locationTime <= end:
-            return True
-        return False
-    else:
-        if start <= locationTime < end:
-            return True
-        return False
+def isInTupleRange(se, start, end, locationTime):  
+        if se == 'Start':
+            if start < locationTime <= end:
+                return True
+            return False
+        else:
+            if start <= locationTime < end:
+                return True
+            return False
 
 def youHome(row, se, locationTime):
     if se == 'Start':
@@ -496,7 +505,6 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
     if homeInfo.empty:
         cfg.errorWriter.writerow([datetime.now(), v, -1,'No usable clusters found for homeInfo - vehicle skipped.'])
         return False, vLocationInfo, homeInfo
-
 
     # vehicles with only one home are marked as the primary home and primary home detection below is skipped
     if len(homeInfo) == 1:
@@ -617,77 +625,86 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
 
     ### Update vLocationInfo
     for se in ['Start', 'End']:
-        # This mapping of column names to column index is nasty, but helps with performance.
-        # The mapping is necessary in order to use the itertuples construct which is much faster 
-        # and is now used instead of iterrows. 
-        # So, although iterrows are easier to use, tuples are more performant. 
         if se == 'Start':
-            tripLocation = 11  
-            tripTime = 3
-            tripHomeID = 1
-            tripDist = 5
-            TripLatitude = 7
-            TripLongitude = 8 
-            TripClusterID = 13
+            SEColumnMappings = StartSEColumnMappings()
         else:
-            tripLocation = 12
-            tripTime = 4
-            tripHomeID = 2
-            tripDist = 6
-            TripLatitude = 9
-            TripLongitude = 10
-            TripClusterID = 14
-        for row in vLocationInfo.itertuples():
-            vrow = vLocationInfo.iloc[row.Index]
+            SEColumnMappings = EndSEColumnMappings()
 
-            ### Set Trip(Start/End)LocationCategory and Trip(Start/End)HomeID
-            # Does row match match a HomeID and is it in between any Home(Start/Local)LocalTime ranges
-            homeID, inRange = isInHomeCluster(se, row[TripClusterID+1], row[tripTime+1], homeInfo)
-            ## did not match a home
-            if homeID == -1:
-                category = 'unknown'
-                # is park in any home cluster
-                if isInRangeSet(se, homeInfo[['HomeStartLocalTime', 'HomeEndLocalTime']], row[tripTime+1]):
-                    category = 'away'
-                vrow[tripLocation] = category
-                vrow[tripHomeID] = None
+        vLocationInfo = parallel_func_wrapper_update_vlocation(vLocationInfo, vectorizedUpdateVehicleLocationInfo, cfg.numCores, SEColumnMappings=SEColumnMappings, homeInfo=homeInfo)
 
-            ## matched a home and is in home cluster period
-            if homeID != -1 and inRange:
-                vrow[tripLocation] = 'home'
-                vrow[tripHomeID] = homeID
+    exit()
 
-            ## matched a home, but is not in home cluster period
-            if homeID != -1 and inRange == False:
-                category = 'unknown'
-                # is park in any home cluster
-                if isInRangeSet(se, homeInfo[['HomeStartLocalTime', 'HomeEndLocalTime']], row[tripTime+1]):
-                    category = 'away'
-                vrow[tripLocation] = category
-                vrow[tripHomeID] = None
-
-            homeLoc = []
-            for homerow in homeInfo[homeInfo['Primary'] == True].itertuples():
-                if isInTupleRange(se, homerow.HomeStartLocalTime, homerow.HomeEndLocalTime, row[tripTime+1]):
-                    homeLoc.extend([homerow[0]])
-
-            # no homes
-            if len(homeLoc) == 0:
-                vrow[tripDist] = None
-            # one distinct home
-            if len(homeLoc) == 1:
-                if row[tripLocation] == 'home':
-                    vrow[tripDist] = 0
-                else:
-                    hm = homeInfo.iloc[homeLoc[0]]
-                    vrow[tripDist] = math.ceil(haversine((row[TripLatitude+1], row[TripLongitude+1]), (hm['CentroidLatitude'], hm['CentroidLongitude']), unit=Unit.MILES))
-            # in range with multiple homes
-            if len(homeLoc) > 1:
-                hm = homeInfo[homeInfo.index.isin(homeLoc) & (homeInfo['Primary'])]
-                vrow[tripDist] = math.ceil(haversine((row[TripLatitude+1], row[TripLongitude+1]), (hm['CentroidLatitude'], hm['CentroidLongitude']), unit=Unit.MILES))
-
-            vLocationInfo.iloc[row.Index] = vrow
     return True, vLocationInfo, homeInfo
+
+def vectorizedUpdateVehicleLocationInfo(vLocationInfo, SEColumnMappings=None, homeInfo=None):
+    vLocationInfo = vLocationInfo.copy()    
+
+    vUpdateVehicleLocatioInfo = np.vectorize(updateVehicleLocationInfo, excluded=['homeInfo'])
+    result = vUpdateVehicleLocatioInfo(SEColumnMappings.mapType, 
+                                                     vLocationInfo[SEColumnMappings.tripClusterID], 
+                                                     vLocationInfo[SEColumnMappings.tripTime],
+                                                     vLocationInfo[SEColumnMappings.tripLocation],
+                                                     vLocationInfo[SEColumnMappings.tripLatitude],
+                                                     vLocationInfo[SEColumnMappings.tripLongitude],
+                                                     homeInfo=homeInfo)
+
+    vLocationInfo[SEColumnMappings.tripLocation] = result[0]
+    vLocationInfo[SEColumnMappings.tripHomeID] = result[1]
+    vLocationInfo[SEColumnMappings.tripDistance] = result[2]
+    vLocationInfo.loc[vLocationInfo[SEColumnMappings.tripHomeID] == -1, SEColumnMappings.tripHomeID] = np.nan
+    vLocationInfo.loc[vLocationInfo[SEColumnMappings.tripDistance] == -1, SEColumnMappings.tripDistance] = np.nan
+    return vLocationInfo
+
+def updateVehicleLocationInfo(mapType, tripClusterID, tripLocaltTime, tripLocation, tripLatitude, tripLongitude, homeInfo=None):
+    ### Set Trip(Start/End)LocationCategory and Trip(Start/End)HomeID
+    # Does row match match a HomeID and is it in between any Home(Start/Local)LocalTime ranges
+    homeID, inRange = isInHomeCluster(mapType, tripClusterID, tripLocaltTime, homeInfo)
+    ## did not match a home
+    if homeID == -1:
+        category = 'unknown'
+        # is park in any home cluster
+        if isInRangeSet(mapType, homeInfo[['HomeStartLocalTime', 'HomeEndLocalTime']], tripLocaltTime):
+            category = 'away'
+        newTripLocation = category
+        newTripHomeID = -1
+
+    ## matched a home and is in home cluster period
+    if homeID != -1 and inRange:
+        newTripLocation = 'home'
+        newTripHomeID = homeID
+
+    ## matched a home, but is not in home cluster period
+    if homeID != -1 and inRange == False:
+        category = 'unknown'
+        # is park in any home cluster
+        if isInRangeSet(mapType, homeInfo[['HomeStartLocalTime', 'HomeEndLocalTime']], tripLocaltTime):
+            category = 'away'
+        newTripLocation = category
+        newTripHomeID = -1
+
+    homeLoc = []
+    for homerow in homeInfo[homeInfo['Primary'] == True].itertuples():
+        if isInTupleRange(mapType, homerow.HomeStartLocalTime, homerow.HomeEndLocalTime, tripLocaltTime):
+            homeLoc.extend([homerow[0]])
+
+    # no homes
+    if len(homeLoc) == 0:
+        newTripDistance = -1
+    # one distinct home
+    if len(homeLoc) == 1:
+        if tripLocation == 'home':
+            newTripDistance = 0
+        else:
+            hm = homeInfo.iloc[homeLoc[0]]
+            newTripDistance = math.ceil(haversine((tripLatitude, tripLongitude), (hm['CentroidLatitude'], hm['CentroidLongitude']), unit=Unit.MILES))
+
+    # in range with multiple homes
+    if len(homeLoc) > 1:
+        hm = homeInfo[homeInfo.index.isin(homeLoc) & (homeInfo['Primary'])]
+        newTripDistance = math.ceil(haversine((tripLatitude, tripLongitude), (hm['CentroidLatitude'], hm['CentroidLongitude']), unit=Unit.MILES))
+
+    return (newTripLocation, newTripHomeID, newTripDistance)
+
 
 def flagTrips(v, vData):
     # use offset as end/start of day, e.g. 3:30 AM
