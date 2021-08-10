@@ -2,6 +2,13 @@
 
 ### **Revision Log**
 
+Release 1.2 included the following changes:
+* 	Added Python library dataclasses
+* 	Added new field 'num_cores' to .yml file to determine how many cores to use during parallel computation
+* 	Added location_generalizer/utils.py and location_generalizer/dataclasses.py
+* 	Modified processHome by adding new parallel/vectorized functionality when updating vLocationInfo
+* 	Fixed a bug in processHome (now vectorizedUpdateVehicleLocationInfo) where off-by-1 index lookups were causing incorrect comparisons
+
 Release 1.1 included the following changes:
 *	Cluster ID for start and end of trip was added to LocationInfo output file
 
