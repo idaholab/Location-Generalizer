@@ -51,6 +51,8 @@ The user also needs to install the following Python libraries in the order liste
 
 `python -m pip install pandasql`
 
+`python -m pip install dataclasses`
+
 ***To install GDAL***
 
 >Go to https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal and download the GDAL wheel.
