@@ -4,7 +4,7 @@
 ########################################################################
 
 # Location Generalizer
-# Release 1.1 6/27/2021
+# Release 1.2 8/10/2021
 
 import pyodbc
 import pandas as pd
@@ -631,8 +631,6 @@ def processHome(v, divisions, vData, vLocationInfo, homeInfo, homeClusters, EVSE
             SEColumnMappings = EndSEColumnMappings()
 
         vLocationInfo = parallel_func_wrapper_update_vlocation(vLocationInfo, vectorizedUpdateVehicleLocationInfo, cfg.numCores, SEColumnMappings=SEColumnMappings, homeInfo=homeInfo)
-
-    exit()
 
     return True, vLocationInfo, homeInfo
 
